@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<head>
+    <link rel="stylesheet" href="stylesheets/calendarview.css">
+    <link rel="stylesheet" href="stylesheets/bootstrap.css">
+    <link rel="stylesheet" href="datatables/media/css/jquery.dataTables.css">
+    <link rel="stylesheet" href="datatables/extras/TableTools/media/css/TableTools.css">
+    <style>
+    body {
+        font-family: Trebuchet MS;
+    }
+/* .xAxis > .tickLabel
+{
+
+-moz-transform:rotate(-90deg);
+-o-transform:rotate(-90deg);
+-webkit-transform:rotate(-90deg);
+filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+}*/
+
+div.calendar {
+    max-width: 240px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+div.calendar table {
+    width: 100%;
+}
+
+div.dateField {
+    width: 140px;
+    padding: 6px;
+    -webkit-border-radius: 6px;
+    -moz-border-radius: 6px;
+    color: #555;
+    background-color: white;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+div#popupDateField:hover {
+    background-color: #cde;
+    cursor: pointer;
+}
+</style>
+<script language="javascript" type="text/javascript" src="flot/jquery.js"></script>
+<script language="javascript" type="text/javascript" src="flot/jquery.flot.js"></script>
+<script language="javascript" type="text/javascript" src="flot/jquery.flot.time.js"></script>
+
+<script language="javascript" type="text/javascript" src="flot/jquery.flot.orderBars.js"></script>
+<script language="javascript" type="text/javascript" src="flot/jquery.flot.axislabels.js"></script>
+<script language="javascript" type="text/javascript" src="javascripts/prototype.js"></script>
+<script language="javascript" type="text/javascript" src="javascripts/calendarview.js"></script>
+<script language="javascript" type="text/javascript" src="javascripts/filters.js"></script>
+<script language="javascript" type="text/javascript" src="flot/jquery.flot.stack.js"></script>
+
+<script language="javascript" type="text/javascript" src="flot/jquery.flot.navigate.js"></script>
+<script type="text/javascript" src="javascripts/bootstrap.js"></script>
+<script type="text/javascript" language="javascript" src="datatables/media/js/jquery.dataTables.js"></script>
+<script type="text/javascript" language="javascript" src="datatables/extras/TableTools/media/js/TableTools.js"></script>
+<script type="text/javascript" language="javascript" src="datatables/extras/TableTools/media/js/ZeroClipboard.js"></script>
+
+<script language="javascript" type="text/javascript" src="options.js"></script>
+</head>
+<body>
+
+
+    <script type="text/javascript">
+   
+    function updateTable(jsonTableData){
+                jQuery('#tableholder').html( '<table cellpadding="0" cellspacing="0" border="0" class="display table table-hover" id="example"></table>' );
+       var oTable =  jQuery('#example').dataTable(  
+            jsonTableData
+            );   
+        var divTable = "<table border=1>\n";
+        var tableHeaders = "<tr>\n<th>Date</th>\n";
+        return oTable;
+
+    }
+    function report() {
+        var value = document.getElementById("times").value;
+        var type = document.getElementById("type").value;
+        var subtype = document.getElementById("subtypes");
+        if (subtype != null) {
+            subtype = document.getElementById("subtypes").value;
+        } else {
+            subtype = "";
+        }
+        value = value + ";" + getStartTime() + ";" + getEndTime() + ";" + type + ";" + subtype;
+        return value;
+    }
+
+    function reloadData() {
+        getStartTime();
+        getEndTime();
+        var chartType=document.getElementById("charttype").value;
+        var value = document.getElementById("times").value;
+        jQuery.get("tableinfo.jag?token=" + report(), function( data ) {
+            var jsonTableData;
+            jsonTableData = jQuery.parseJSON(data);
+          var oTable = updateTable(jsonTableData);	
+                     jQuery('#example').delegate('tbody > tr ', 'click', function ()
+                           {
+                                window.open(oTable.fnGetData(this)[6]);
+                           });		
+
+
+
+        });
+        jQuery.get("barchart.jag?token=" + report() +"&charttype="+chartType, function (data) {
+            jQuery("#placeholder").bind("plothover", onHover);
+            var jsonData;
+            jsonData = jQuery.parseJSON(data);
+
+            var width = 0;
+            var size = "year";
+            var format = "%Y";
+            if (value == "year") {
+                width = 1000 * 60 * 60 * 24 * 30;
+                size = "year";
+                format = "%Y";
+            } else if (value == "month") {
+                width = 1000 * 60 * 60 * 24 * 3;
+                size = "month";
+                format = "%b";
+            } else if (value == "day") {
+                width = 1000 * 60 * 60;
+                size = "day";
+                format = "%d";
+            } else if (value == "hour") {
+                width = 1000 * 60 * 3;
+                size = "hour";
+                format = "%h";
+            }
+            var options = getFlotOptions(width,getStartTime(),getEndTime(),size,format,chartType);
+            var plot = jQuery.plot("#placeholder", jsonData, options);
+
+});
+}
+function showTooltip(x, y, contents) {
+    jQuery("<div id='tooltip'>" + contents + "</div>").css({
+        position: "absolute",
+        display: "none",
+        top: y + 5,
+        left: x + 5,
+        border: "1px solid #fdd",
+        padding: "2px",
+        "background-color": "#fee",
+        opacity: 0.80
+    }).appendTo("body").fadeIn(200);
+}
+
+function onHover(event, pos, item) {
+    var previousPoint = null;
+    if (item) {
+        if (previousPoint != item.dataIndex) {
+
+            previousPoint = item.dataIndex;
+
+            jQuery("#tooltip").remove();
+            var data = new Date(item.datapoint[0]);
+            var x = data.getFullYear() + "-" + (data.getMonth() + 1) + "-" + data.getDate();
+            y = item.datapoint[1];
+
+            showTooltip(item.pageX, item.pageY,
+                item.series.label + " of " + x + " = " + y);
+        }
+    } else {
+        jQuery("#tooltip").remove();
+        previousPoint = null;
+    }
+
+}
+function hook(plot, offset) {
+    plot.getAxes().yaxis.options.panRange[1] = plot.getAxes().yaxis.datamax + 2;
+    plot.getAxes().yaxis.options.max = plot.getAxes().yaxis.datamax + 2;
+    plot.getAxes().yaxis.options.min = 0;
+    plot.getAxes().xaxis.options.panRange[1] = plot.getAxes().xaxis.datamax;
+    plot.getAxes().xaxis.options.panRange[0] = plot.getAxes().xaxis.datamin;
+};
+Event.observe(window, 'load', function () { setupCalendars() })
+</script>
+<div style="border-style:solid; border-color: rgb(245,245,245); width:700px; margin:0 auto;">
+
+    <div class="thumbnail" style="background-color: #E6E6E6; margin-bottom: 50px;">
+        <p>Bar chart</p>
+    </div>
+
+    <div id="content">
+        <div id="placeholder" style="width: 700px;height: 300px"></div>
+    </div>
+    <!--div class="modal-footer"-->
+    <div class="collapse" style="background-color: #E6E6E6;" id="settingsMenu">
+
+        <div id="popupExample">
+
+            <select name="aa" id="type" onchange="showSubtypes(this.value)">
+                <option value="all">All</option>
+                <option value="case">Case</option>
+                <option value="document">Document</option>
+                <option value="task">Task</option>
+            </select>
+            <select name="aa" id="times">
+                <option value="year">Year</option>
+                <option value="month">Month</option>
+                <option value="day">Day</option>
+                <option value="hour">Hour</option>
+            </select>
+            <select name="aa" id="charttype">
+                        <option value="groupedbars">Grouped bars</option>
+                        <option value="stackedbars">Stacked bars</option>    
+                    </select>
+        </div>
+
+
+        <div class="input-append control-group" id="datePicker">
+            <div class="controls">
+                <input type="text" class="span2" id="firstDate" placeholder="Date from" />
+                <span class="add-on">
+                    <img id="calendarBegin" src="index.jpg" class="img-responsive" alt="Responsive image" />
+                </span>
+            </div>
+        </div>
+        <div class="input-append control-group" id="datePicker">
+            <div class="controls">
+                <input type="text" class="span2" id="lastDate" placeholder="Date to" />
+                <span class="add-on">
+                    <img id="calendarEnd" src="index.jpg" class="img-responsive" alt="Responsive image" />
+                </span>
+            </div>
+        </div>
+
+
+        <button id="submit" class="btn" onclick="validateForm()">Submit</button>
+        <div id="message">
+
+        </div>
+    </div>
+    <div class="thumbnail" style="background-color: #E6E6E6;" data-toggle="collapse" data-target="#settingsMenu">
+        <p align="center" class="h1">Settings</p>
+    </div>
+    <div class="message"></div>
+</div>
+<div id="tableholder"></div>
+</body>

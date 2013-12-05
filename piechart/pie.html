@@ -1,0 +1,147 @@
+<!DOCTYPE HTML>
+<head>
+    <link rel="stylesheet" href="stylesheets/calendarview.css">
+    <link rel="stylesheet" href="stylesheets/bootstrap.css">
+
+    <style>
+    body {
+        font-family: Trebuchet MS;
+    }
+    div.calendar {
+        max-width: 240px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    div.calendar table {
+        width: 100%;
+    }
+    div.dateField {
+        width: 140px;
+        padding: 6px;
+        -webkit-border-radius: 6px;
+        -moz-border-radius: 6px;
+        color: #555;
+        background-color: white;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: center;
+    }
+    div#popupDateField:hover {
+        background-color: #cde;
+        cursor: pointer;
+    }
+    .navbar-inner {
+        min-height: 15px;
+    }
+    </style>
+    <script language="javascript" type="text/javascript" src="flot/jquery.js"></script>
+    <script language="javascript" type="text/javascript" src="flot/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" src="flot/jquery.flot.time.js"></script>
+    <script language="javascript" type="text/javascript" src="flot/jquery.flot.pie.js"></script>
+    <script language="javascript" type="text/javascript" src="flot/jquery.flot.orderBars.js"></script>
+    <script language="javascript" type="text/javascript" src="javascripts/prototype.js"></script>
+    <script language="javascript" type="text/javascript" src="javascripts/calendarview.js"></script>	
+    <script language="javascript" type="text/javascript" src="javascripts/filters.js"></script>
+    <script type="text/javascript" src="flot/jquery.flot.axislabels.js"></script>
+    <script type="text/javascript" src="javascripts/bootstrap.js"></script>
+</head>
+<body>
+
+    <script type="text/javascript">
+
+
+    function report(){
+        var value=document.getElementById("type").value;
+        var where = "and EXTRACT(EPOCH FROM to_timestamp(substring(eventdate,2,(char_length(eventdate)-11)) , 'YYYYMMDD'))::bigint*1000>="+getStartTime()+" and EXTRACT(EPOCH FROM to_timestamp(substring(eventdate,2,(char_length(eventdate)-11)) , 'YYYYMMDD'))::bigint*1000<="+getEndTime();
+        return("SELECT objectsubtype, count(objectsubtype) from emf_events where objecttype='\"" + value + "\"' " + where + " group by objectsubtype ;");
+    }
+    function reloadData(){
+        jQuery.get("pie.jag?token=" + report(), function( data ) {
+            var d;
+            var jsonData;
+            d=data;
+            jsonData = jQuery.parseJSON(d);
+            jQuery.plot("#placeholder", jsonData, {
+                series: {
+                    pie: {
+                        show: true
+                    }
+                },
+                legend: {
+                    show: false
+                },
+                grid: {
+                    hoverable: true,
+                    clickable: true
+                }
+            });
+            jQuery("#interactive").bind("plothover", pieHover);
+        });
+    }	
+    function pieHover(event, pos, obj) {
+        if (!obj)
+            return;
+        percent = parseFloat(obj.series.percent).toFixed(2);
+        jQuery("#hover").html('<span style="font-weight: bold; color: '+obj.series.color+'">'+obj.series.label+' ('+obj.series.data[0][1]+')</span>');
+    }
+
+Event.observe(window, 'load', function() {  setupCalendars() })
+</script>
+<div style="border-style:solid; border-color: rgb(245,245,245); display: inline-block; margin-left: 500px;">
+
+    <div class="thumbnail" style="background-color: #E6E6E6; margin-bottom: 50px;">
+        <p>Pie chart</p>
+    </div>	
+
+    <div id="content">
+        <div id="interactive">
+            <div id="placeholder" style="width: 700px;height: 500px;"></div>
+            <div id="hover"></div>
+        </div>
+    </div>
+    <!--div class="modal-footer"-->
+
+    <div class="collapse" style="background-color: #E6E6E6;" id="settingsMenu">
+
+        <div id="popupExample">
+            <select name="aa"  id="type">
+                <option value="case">Case</option>
+                <option value="document">Document</option>
+                <option value="task">Task</option>
+            </select>
+        </div>
+
+
+        <div class="input-append control-group" id="datePicker">
+            <div class="controls">
+                <input type="text" class="span2" id="firstDate" placeholder="Date from" />
+                <span class="add-on">
+                    <img id="calendarBegin" src="index.jpg" class="img-responsive" alt="Responsive image"/>
+                </span>
+            </div>
+        </div>
+        <div class="input-append control-group" id="datePicker">
+            <div class="controls">
+                <input type="text" class="span2" id="lastDate" placeholder="Date to" />
+                <span class="add-on">
+                    <img id="calendarEnd" src="index.jpg" class="img-responsive" alt="Responsive image"/>
+                </span>
+            </div>
+        </div>
+
+
+        <button id="submit" class="btn" onclick="validateForm()">Submit</button>
+        <div id="message">
+
+        </div>
+
+
+        <!--/div-->
+    </div>
+    <div class="thumbnail" style="background-color: #E6E6E6;" data-toggle="collapse" data-target="#settingsMenu">
+        <p align="center" class="h1">Settings</p>
+    </div>
+
+</div>
+
+</body>

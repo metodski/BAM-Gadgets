@@ -1,0 +1,98 @@
+<%
+	var config = {driverClassName:"org.postgresql.Driver"};
+
+	var db = new Database("jdbc:postgresql://31.13.228.108:5432/wso2bam", "jboss", "Admin-jboss", config);	
+
+
+var log = new Log();
+	
+	var token = request.getParameter("token");
+	var res=token.split(";");
+	var query;
+	function getTypeQuery(){
+		if(res[3]=="all"){
+			return " and action<>'\"login\"'";
+		}else if(res[3]=="case"){
+			return " and objecttype='\"case\"'";
+		}else if(res[3]=="task"){
+			return " and objecttype='\"task\"'";
+		}else if(res[3]=="document"){
+			return " and objecttype='\"document\"'";
+		}
+	}
+	
+	function getSubtypeQuery(){
+		if(res[4]==""||res[4]=="all"){
+			return "";
+		}else{
+			return " and objectsubtype='\""+res[4]+"\"'";
+		}
+	}
+
+	var where= "where EXTRACT(EPOCH FROM to_timestamp(substring(eventdate,2,(char_length(eventdate)-9)) , 'YYYYMMDDHH24'))::bigint*1000>="+res[1]+" and EXTRACT(EPOCH FROM to_timestamp(substring(eventdate,2,(char_length(eventdate)-9)) , 'YYYYMMDDHH24'))::bigint*1000<="+res[2]+getTypeQuery() + getSubtypeQuery();
+		query = "SELECT date_trunc('second',to_timestamp(eventdate , ' YYYYMMDDHH24MISSMS '))::text as data, action, username, objecttype, objecttitle, objectsubtype, objecturl, objectstate from emf_events "+where+" order by data;";
+	
+	var result = db.query(query);
+	
+
+	db.close();
+		
+function getData() {
+var log = new Log();
+		var object = {
+					"sDom": 'T<"clear">lfrtip',
+			        "oTableTools": {
+			            "sSwfPath": "datatables/extras/TableTools/media/swf/copy_csv_xls_pdf.swf",
+						"aButtons": [ 
+							{"sExtends":"copy", "mColumns": "visible" },
+							{"sExtends":"csv","mColumns": "visible" },
+							{"sExtends":"pdf", "mColumns": "visible" },
+							{"sExtends":"print","mColumns": "visible" }
+							],
+						"mColumns": "visible" 
+					},
+					"aaData": [],
+					"aoColumns": [
+						{ "sTitle": "Date" },
+						{ "sTitle": "Action" },
+						{ "sTitle": "Username" },
+						{ "sTitle": "Object type" },
+						{ "sTitle": "Object title" },
+						{ "sTitle": "Object subtype" },
+						{ "sTitle": "Object url" ,
+			               "bVisible":    false },
+						{ "sTitle": "Object state" }
+					]
+				};
+				var dataArray;
+		for (var i = 0; i < result.length; i++) {
+			dataArray = [
+				result[i]["data"],
+				result[i]["action"],
+				result[i]["username"],
+				result[i]["objecttype"],
+				result[i]["objecttitle"],
+				result[i]["objectsubtype"],
+				result[i]["objecturl"],
+				result[i]["objectstate"]
+				]
+					object.aaData.push(dataArray);
+			}
+		
+		
+		return object;
+
+	}
+	function createEmptyDate(date) {
+		var object = {
+					label : "",
+					data : [[date,0]],
+					bars : {order : 0, lineWidth: 0},
+					legend: {show: false}
+				}
+		return object;
+	}
+	
+	print(getData());
+
+%>

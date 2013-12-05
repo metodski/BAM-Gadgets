@@ -1,0 +1,133 @@
+<%
+	var config = {driverClassName:"org.postgresql.Driver"};
+
+	var db = new Database("jdbc:postgresql://10.131.2.223:5432/postgres", "postgres", "admin", config);
+
+var log = new Log();
+	
+	var token = request.getParameter("token");
+	var res=token.split(";");
+	var query;
+	var chartType=request.getParameter("charttype");
+	function getTypeQuery(){
+		if(res[3]=="all"){
+			return " and action<>'\"login\"'";
+		}else if(res[3]=="case"){
+			return " and objecttype='\"case\"'";
+		}else if(res[3]=="task"){
+			return " and objecttype='\"task\"'";
+		}else if(res[3]=="document"){
+			return " and objecttype='\"document\"'";
+		}
+	}
+
+	function getSubtypeQuery(){
+		if(res[4]==""||res[4]=="all"){
+			return "";
+		}else{
+			return " and objectsubtype='\""+res[4]+"\"'";
+		}
+	}
+
+	var where= "where EXTRACT(EPOCH FROM to_timestamp(substring(eventdate,2,(char_length(eventdate)-9)) , 'YYYYMMDDHH24'))::bigint*1000>="+res[1]+" and EXTRACT(EPOCH FROM to_timestamp(substring(eventdate,2,(char_length(eventdate)-9)) , 'YYYYMMDDHH24'))::bigint*1000<="+res[2]+getTypeQuery()+getSubtypeQuery();
+			query="SELECT extract(epoch from date_trunc('"+res[0]+"',to_timestamp(eventdate , ' YYYYMMDDHH24MISSMS ')))::bigint*1000 as data,count(action) as datacount, objectstate from emf_events "+where+" group by data,objectstate order by data;";
+	var result = db.query(query);
+
+	db.close();
+		
+function getData() {
+		var emptyRangeArray = createEmptyRange(res[1],res[2]);
+		var resultArray=[];
+		var otherFound;
+		var currentObject;
+		var dataLength;
+		
+		resultArray.push(emptyRangeArray[0]);
+		resultArray.push(emptyRangeArray[1]);
+		for (var i = 0; i < result.length; i++) {
+			found=false;
+			if(result[i]["objectstate"]=="\"COMPLETED\"" || result[i]["objectstate"]=="\"STOPPED\""){
+				for(var j=0;j<resultArray.length;j++){					
+					if(resultArray[j]["label"]=="Closed"){
+						dataLength=resultArray[j]["data"].length-1;
+						if(resultArray[j]["data"][dataLength][0]==result[i]["data"]){
+							resultArray[j]["data"][dataLength][1] =parseInt(result[i]["datacount"])+parseInt(resultArray[j]["data"][dataLength][1]);
+							otherFound=true;
+						} else {
+							resultArray[j]["data"].push([result[i]["data"],parseInt(result[i]["datacount"])]);
+							otherFound=true;
+						}
+					}
+				}
+				if(!otherFound){
+					currentObject=createObject("Closed",[[result[i]["data"],result[i]["datacount"]]],i);
+					resultArray.push(currentObject);
+				}
+			}else{
+				for(var j=0;j<resultArray.length;j++){
+					if(resultArray[j]["label"]=="Open"){
+						dataLength=resultArray[j]["data"].length-1;
+						if(resultArray[j]["data"][dataLength][0]==result[i]["data"]){
+							resultArray[j]["data"][dataLength][1] =parseInt(result[i]["datacount"])+parseInt(resultArray[j]["data"][dataLength][1]);
+							otherFound=true;
+						} else {
+							resultArray[j]["data"].push([result[i]["data"],parseInt(result[i]["datacount"])]);
+							otherFound=true;
+						}
+					}			
+				}						
+				if(!otherFound){
+					if(chartType=="groupedbars"){
+						currentObject=createObject("Open",[[result[i]["data"],result[i]["datacount"]]],i);
+						resultArray.push(currentObject);
+					}else if(chartType=="stackedbars"){
+						currentObject=createObject("Open",[[result[i]["data"],result[i]["datacount"]]]);
+						resultArray.push(currentObject);
+					}
+				}
+
+			}		
+		}		
+		return resultArray;
+
+	}
+	function createObject(label,data,order){
+			var barObject={
+			label: label,
+			data: data,
+			bars : {order : order, lineWidth: 1,  fillColor: { colors: [{ opacity: 1 }, { opacity: 1 } ] }},
+			legend: {show: true},
+		}
+		return barObject;
+	}
+	function createEmptyRange(date, secondDate) {
+	var firstDate = new Date(parseInt(date));
+	var secondDate = new Date(parseInt(secondDate));
+		if (res[0] == 'month'){
+			firstDate.setDate(1);
+			secondDate.setDate(31);
+		} else if(res[0] == 'year'){
+			firstDate.setDate(1);
+			firstDate.setMonth(0);
+			secondDate.setDate(30);
+			secondDate.setMonth(11);
+			log.info('first date: ' + firstDate);
+			log.info('second date: ' + secondDate);
+		}
+		var object = [{
+					label : "",
+					data : [[firstDate.getTime(),0]],
+					bars : {show:false},
+					legend: {show: false}
+				},{
+					label : "",
+					data : [[secondDate.getTime(),0]],
+					bars : {fillColor: { colors: [{ opacity:0 }, { opacity: 0 } ] }},
+					legend: {show: false}
+				}];
+		return object;
+	}
+	
+	print(getData());
+
+%>

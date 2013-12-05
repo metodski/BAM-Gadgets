@@ -1,0 +1,25 @@
+<%
+	var config = {driverClassName:"org.postgresql.Driver"};
+
+	var db = new Database("jdbc:postgresql://10.131.2.223:5432/postgres", "postgres", "admin", config);
+	
+	var query = request.getParameter("token");
+
+	var result = db.query(query);
+
+	db.close();
+		
+function getData() {
+		var finalArray=[];
+		
+		for (var i = 0; i < result.length; i++) {
+			finalArray.push({label: result[i]["objectsubtype"], data:result[i]["count"]});
+		}
+		
+		return finalArray;
+
+	}
+	
+	print(getData());
+
+%>
