@@ -52,7 +52,7 @@ div#popupDateField:hover {
 <script language="javascript" type="text/javascript" src="flot/jquery.flot.axislabels.js"></script>
 <script language="javascript" type="text/javascript" src="javascripts/prototype.js"></script>
 <script language="javascript" type="text/javascript" src="javascripts/calendarview.js"></script>
-<script language="javascript" type="text/javascript" src="javascripts/filters.js"></script>
+<script language="javascript" type="text/javascript" src="javascript.js"></script>
 <script language="javascript" type="text/javascript" src="flot/jquery.flot.stack.js"></script>
 
 <script language="javascript" type="text/javascript" src="flot/jquery.flot.navigate.js"></script>
@@ -68,117 +68,7 @@ div#popupDateField:hover {
 
     <script type="text/javascript">
    
-    function updateTable(jsonTableData){
-                jQuery('#tableholder').html( '<table cellpadding="0" cellspacing="0" border="0" class="display table table-hover" id="example"></table>' );
-       var oTable =  jQuery('#example').dataTable(  
-            jsonTableData
-            );   
-        var divTable = "<table border=1>\n";
-        var tableHeaders = "<tr>\n<th>Date</th>\n";
-        return oTable;
-
-    }
-    function report() {
-        var value = document.getElementById("times").value;
-        var type = document.getElementById("type").value;
-        var subtype = document.getElementById("subtypes");
-        if (subtype != null) {
-            subtype = document.getElementById("subtypes").value;
-        } else {
-            subtype = "";
-        }
-        value = value + ";" + getStartTime() + ";" + getEndTime() + ";" + type + ";" + subtype;
-        return value;
-    }
-
-    function reloadData() {
-        getStartTime();
-        getEndTime();
-        var chartType=document.getElementById("charttype").value;
-        var value = document.getElementById("times").value;
-        jQuery.get("tableinfo.jag?token=" + report(), function( data ) {
-            var jsonTableData;
-            jsonTableData = jQuery.parseJSON(data);
-          var oTable = updateTable(jsonTableData);	
-                     jQuery('#example').delegate('tbody > tr ', 'click', function ()
-                           {
-                                window.open(oTable.fnGetData(this)[6]);
-                           });		
-
-
-
-        });
-        jQuery.get("barchart.jag?token=" + report() +"&charttype="+chartType, function (data) {
-            jQuery("#placeholder").bind("plothover", onHover);
-            var jsonData;
-            jsonData = jQuery.parseJSON(data);
-
-            var width = 0;
-            var size = "year";
-            var format = "%Y";
-            if (value == "year") {
-                width = 1000 * 60 * 60 * 24 * 30;
-                size = "year";
-                format = "%Y";
-            } else if (value == "month") {
-                width = 1000 * 60 * 60 * 24 * 3;
-                size = "month";
-                format = "%b";
-            } else if (value == "day") {
-                width = 1000 * 60 * 60;
-                size = "day";
-                format = "%d";
-            } else if (value == "hour") {
-                width = 1000 * 60 * 3;
-                size = "hour";
-                format = "%h";
-            }
-            var options = getFlotOptions(width,getStartTime(),getEndTime(),size,format,chartType);
-            var plot = jQuery.plot("#placeholder", jsonData, options);
-
-});
-}
-function showTooltip(x, y, contents) {
-    jQuery("<div id='tooltip'>" + contents + "</div>").css({
-        position: "absolute",
-        display: "none",
-        top: y + 5,
-        left: x + 5,
-        border: "1px solid #fdd",
-        padding: "2px",
-        "background-color": "#fee",
-        opacity: 0.80
-    }).appendTo("body").fadeIn(200);
-}
-
-function onHover(event, pos, item) {
-    var previousPoint = null;
-    if (item) {
-        if (previousPoint != item.dataIndex) {
-
-            previousPoint = item.dataIndex;
-
-            jQuery("#tooltip").remove();
-            var data = new Date(item.datapoint[0]);
-            var x = data.getFullYear() + "-" + (data.getMonth() + 1) + "-" + data.getDate();
-            y = item.datapoint[1];
-
-            showTooltip(item.pageX, item.pageY,
-                item.series.label + " of " + x + " = " + y);
-        }
-    } else {
-        jQuery("#tooltip").remove();
-        previousPoint = null;
-    }
-
-}
-function hook(plot, offset) {
-    plot.getAxes().yaxis.options.panRange[1] = plot.getAxes().yaxis.datamax + 2;
-    plot.getAxes().yaxis.options.max = plot.getAxes().yaxis.datamax + 2;
-    plot.getAxes().yaxis.options.min = 0;
-    plot.getAxes().xaxis.options.panRange[1] = plot.getAxes().xaxis.datamax;
-    plot.getAxes().xaxis.options.panRange[0] = plot.getAxes().xaxis.datamin;
-};
+   
 Event.observe(window, 'load', function () { setupCalendars() })
 </script>
 <div style="border-style:solid; border-color: rgb(245,245,245); width:700px; margin:0 auto;">
