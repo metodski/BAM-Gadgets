@@ -80,6 +80,9 @@ Event.observe(window, 'load', function () { setupCalendars() })
     <div id="content">
         <div id="placeholder" style="width: 700px;height: 300px"></div>
     </div>
+	
+	<p align="center" id="resultmsg"></p>
+	
     <!--div class="modal-footer"-->
     <div class="collapse" style="background-color: #E6E6E6;" id="settingsMenu">
 
@@ -97,10 +100,14 @@ Event.observe(window, 'load', function () { setupCalendars() })
                 <option value="day">Day</option>
                 <option value="hour">Hour</option>
             </select>
-            <select name="aa" id="charttype">
-                        <option value="groupedbars">Grouped bars</option>
-                        <option value="stackedbars">Stacked bars</option>    
-                    </select>
+			<select name="aa" id="charttype">
+				<option value="groupedbars">Grouped bars</option>
+				<option value="stackedbars">Stacked bars</option>
+				<option value="lines">Lines</option>
+				<option value="lineswithsteps">Lines with steps</option>
+				<option value="stackedlines">Stacked lines</option>
+				<option value="stackedlineswithsteps">Stacked lines with steps</option>						
+			</select>
         </div>
 
 

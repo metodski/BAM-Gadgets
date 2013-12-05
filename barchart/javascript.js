@@ -65,9 +65,30 @@
             }
             var options = getFlotOptions(width,getStartTime(),getEndTime(),size,format,chartType);
             var plot = jQuery.plot("#placeholder", jsonData, options);
-
+			displayResultMsg(jsonData,plot);
 });
 }
+
+function displayResultMsg(jsonData, plot){
+	var count=0;
+
+	jsonData.forEach(
+		function(entry) {
+			var o = entry["data"];
+
+			o.forEach(function(entry2){
+				count=count+parseInt(entry2[1]);
+			});			
+		}
+	);
+
+	var start = document.getElementById("firstDate").value;
+	var end = document.getElementById("lastDate").value;
+
+	var rmsg="Number of operations for the interval "+start+" : "+end+"="+count;
+	document.getElementById("resultmsg").innerHTML=rmsg;
+}
+
 function showTooltip(x, y, contents) {
     jQuery("<div id='tooltip'>" + contents + "</div>").css({
         position: "absolute",

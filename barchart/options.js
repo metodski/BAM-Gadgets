@@ -59,6 +59,36 @@ function getFlotOptions( width, start, end,size,format,chartType){
 					show: true
 				}
 			}
+	} else if(chartType=="lines"){
+		json["series"]={
+				lines: {
+					fill:true,
+					show: true
+				}
+			}
+	} else if(chartType=="lineswithsteps"){
+		json["series"]={
+				lines: {
+					fill:true,
+					steps:true,
+					show: true
+				}
+			}
+	} else if(chartType=="stackedlines"){
+		json["series"]={
+				lines: {
+					show: true,
+					fill:true,				
+				}
+			}
+	} else if(chartType=="stackedlineswithsteps"){
+		json["series"]={
+				lines: {
+					steps:true,
+					show: true,
+					fill:true
+				}
+			}
 	} 
 	return json;
 
